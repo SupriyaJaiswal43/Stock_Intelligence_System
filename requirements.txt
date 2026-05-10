@@ -6,10 +6,9 @@ gunicorn
 # Market data
 yfinance
 pandas
-pandas-ta
 ta
-twelvedata
 finnhub-python
+twelvedata
 
 # AI / LLM
 openai
@@ -17,7 +16,6 @@ groq
 
 # Trading APIs
 alpaca-trade-api
-upstox-python-sdk
 
 # Utilities
 requests
@@ -25,9 +23,3 @@ numpy
 apscheduler
 python-dotenv
 aiohttp
-
-# Scheduler / notifications
-python-telegram-bot
-
-# ML (optional — remove if not used)
-scikit-learn

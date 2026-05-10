@@ -295,7 +295,8 @@ def get_history(symbol: str):
     """Price history + indicators for modal chart."""
     try:
         import yfinance as yf
-        import pandas_ta as ta
+        import ta as ta_lib
+        import pandas as pd
 
         rate      = get_usd_inr()
         is_indian = ".NS" in symbol or ".BO" in symbol
@@ -313,20 +314,30 @@ def get_history(symbol: str):
         prices = [round(safe_float(p) * mult, 2) for p in close]
         vols   = [int(safe_float(v)) for v in volume]
 
-        rsi_s  = ta.rsi(close, length=14)
-        rsi    = [round(safe_float(v), 1) if v == v else 50 for v in rsi_s]
+        # RSI using ta library
+        try:
+            rsi_series = ta_lib.momentum.RSIIndicator(close, window=14).rsi()
+            rsi = [round(safe_float(v), 1) if not pd.isna(v) else 50 for v in rsi_series]
+        except Exception:
+            rsi = [50] * len(dates)
 
-        macd_df = ta.macd(close)
-        macd    = ([round(safe_float(v), 4) if v == v else 0
-                    for v in macd_df.iloc[:, 0]]
-                   if macd_df is not None and not macd_df.empty
-                   else [0] * len(dates))
+        # MACD using ta library
+        try:
+            macd_ind = ta_lib.trend.MACD(close)
+            macd_line = macd_ind.macd()
+            macd = [round(safe_float(v), 4) if not pd.isna(v) else 0 for v in macd_line]
+        except Exception:
+            macd = [0] * len(dates)
 
-        ema20 = ta.ema(close, length=20)
-        ema50 = ta.ema(close, length=50)
-
-        def ema_vals(s):
-            return [round(safe_float(v) * mult, 2) if v == v else None for v in s]
+        # EMA using ta library
+        try:
+            ema20_series = ta_lib.trend.EMAIndicator(close, window=20).ema_indicator()
+            ema50_series = ta_lib.trend.EMAIndicator(close, window=50).ema_indicator()
+            ema20 = [round(safe_float(v) * mult, 2) if not pd.isna(v) else None for v in ema20_series]
+            ema50 = [round(safe_float(v) * mult, 2) if not pd.isna(v) else None for v in ema50_series]
+        except Exception:
+            ema20 = [None] * len(dates)
+            ema50 = [None] * len(dates)
 
         return jsonify({
             "dates":  dates,
@@ -334,8 +345,8 @@ def get_history(symbol: str):
             "rsi":    rsi,
             "macd":   macd,
             "volume": vols,
-            "ema20":  ema_vals(ema20),
-            "ema50":  ema_vals(ema50),
+            "ema20":  ema20,
+            "ema50":  ema50,
         })
 
     except Exception as e:
